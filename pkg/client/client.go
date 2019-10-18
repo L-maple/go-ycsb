@@ -59,7 +59,7 @@ func delay(threadCount int) {
 }
 
 
-func newWorker(p *properties.Properties, threadID int, threadCount int, workload ycsb.Workload, db ycsb.DB, index int) *worker {
+func newWorker(p *properties.Properties, threadID int, threadCount int, workload ycsb.Workload, db ycsb.DB) *worker {
 	w := new(worker)
 	w.p = p
 	w.doTransactions = p.GetBool(prop.DoTransactions, true)
@@ -227,7 +227,7 @@ func (c *Client) Run(ctx context.Context) {
 		go func(threadId int) {
 			defer wg.Done()
                         
-			w := newWorker(c.p, threadId, threadCount, c.workload, c.db, i)
+			w := newWorker(c.p, threadId, threadCount, c.workload, c.db)
 			ctx := c.workload.InitThread(ctx, threadId, threadCount)
 			ctx = c.db.InitThread(ctx, threadId, threadCount)
 			w.run(ctx, threadCount)
