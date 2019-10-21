@@ -21,6 +21,8 @@ import (
 	"sync"
 	"time"
 	"strconv"
+	"io/ioutil"
+	"strings"
 
 	"github.com/magiconair/properties"
 	"github.com/pingcap/go-ycsb/pkg/measurement"
@@ -44,10 +46,21 @@ type worker struct {
 
 func delay(threadCount int) {
 	// set the thread's delayed time
-        qps := os.Getenv("QPS")
-        qps_i, err := strconv.Atoi(qps)
-	delay_i := 0   // 设置延时时间
+        // qps := os.Getenv("QPS")
+	qps, err := ioutil.ReadFile("qps")
+	qps_s := string(qps)
 	if err != nil {
+	    // fmt.Println("delay is not set. The default delay time is 0.")
+	    qps_s = "0"	
+        }
+	qps_s = strings.Trim(qps_s, " \n")
+        qps_i, err := strconv.Atoi(qps_s)
+	if err != nil {
+	    // fmt.Println("QPS's format is wrong, it should be an integer. So it's set 0.")
+	    qps_i = 0
+	}
+	delay_i := 0   // 设置延时时间
+	if err != nil || qps_i == 0 {
             // fmt.Println("The env for DELAY is empty. The delay time has been set to the default 0...")
             delay_i = 0
         } else {
