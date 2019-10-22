@@ -44,30 +44,32 @@ type worker struct {
 	opsDone         int64
 }
 
-func delay(threadCount int) {
-	// set the thread's delayed time
-        // qps := os.Getenv("QPS")
-	qps, err := ioutil.ReadFile("qps")
-	qps_s := string(qps)
-	if err != nil {
-	    // fmt.Println("delay is not set. The default delay time is 0.")
-	    qps_s = "0"	
-        }
-	qps_s = strings.Trim(qps_s, " \n")
-        qps_i, err := strconv.Atoi(qps_s)
-	if err != nil {
-	    // fmt.Println("QPS's format is wrong, it should be an integer. So it's set 0.")
-	    qps_i = 0
-	}
-	delay_i := 0   // 设置延时时间
-	if err != nil || qps_i == 0 {
-            // fmt.Println("The env for DELAY is empty. The delay time has been set to the default 0...")
-            delay_i = 0
-        } else {
-	    delay_i = 1000 / (qps_i / threadCount)   // 每个线程在每秒的延时时间(ms)
-	}
-        // fmt.Println("This thread's delay time has been set to ", delay_i)
+var delay_i = 0  // record the delay time
 
+func delay(threadCount int, loop_number int) {
+	// set the thread's delayed time
+	if loop_number % 1000 == 0 {
+	    qps, err := ioutil.ReadFile("qps")
+	    qps_s := string(qps)
+	    if err != nil {
+	        // fmt.Println("delay is not set. The default delay time is 0.")
+	        qps_s = "0"	
+            }
+	    qps_s = strings.Trim(qps_s, " \n")
+            qps_i, err := strconv.Atoi(qps_s)
+	    if err != nil {
+	        // fmt.Println("QPS's format is wrong, it should be an integer. So it's set 0.")
+	        qps_i = 0
+	    }
+
+	    if err != nil || qps_i == 0 || qps_i / threadCount == 0 {
+                // fmt.Println("The delay time has been set to the default 0...")
+                delay_i = 0
+            } else {
+	        delay_i = 1000 / (qps_i / threadCount)   // 每个线程在每秒的延时时间(ms)
+	    }
+            // fmt.Println("This thread's delay time has been set to ", delay_i)
+        }
         time.Sleep(time.Duration(delay_i) * time.Millisecond)
 }
 
@@ -145,11 +147,12 @@ func (w *worker) run(ctx context.Context, threadCount int) {
 	}
 
 	startTime := time.Now()
-
+        
+	var loop_number = 0
 	for w.opCount == 0 || w.opsDone < w.opCount {
-		
-		delay(threadCount)  // 对线程的每次操作进行延时限制
-		
+		delay(threadCount, loop_number)  // 对线程的每次操作进行延时限制
+		loop_number++
+
 		var err error
 		opsCount := 1
 		if w.doTransactions {
